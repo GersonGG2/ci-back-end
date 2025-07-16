@@ -1,16 +1,27 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Habilita la validación global
-  app.useGlobalPipes(new ValidationPipe());
+  // Configuración de validación global
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
   
-  // Habilita CORS para desarrollo
+  // Configuración de CORS
   app.enableCors();
   
-  await app.listen(process.env.PORT ?? 3000);
+  // Configuración de Swagger
+  const config = new DocumentBuilder()
+    .setTitle('API Cursos Intersemestrales')
+    .setDescription('API para la gestión de cursos intersemestrales')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+  
+  await app.listen(3000);
 }
 bootstrap();
