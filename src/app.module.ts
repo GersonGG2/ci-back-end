@@ -12,6 +12,7 @@ import { AsistenciasModule } from './asistencias/asistencias.module';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
 import { CursosModule } from './cursos/cursos.module';
 import { AcademiasModule } from './academias/academias.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AcademiasModule } from './academias/academias.module';
         synchronize: false,
       }),
     }),
+    CommonModule,
     UsersModule,
     RolesModule,
     AuthModule,
