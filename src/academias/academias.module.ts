@@ -4,11 +4,12 @@ import { AcademiasService } from './academias.service';
 import { AcademiasController } from './academias.controller';
 import { Academia } from './entities/academia.entity';
 import { AuthModule } from '../auth/auth.module';
+import { CommonModule } from 'src/common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Academia]),
-    AuthModule
+    AuthModule,CommonModule
   ],
   controllers: [AcademiasController],
   providers: [AcademiasService],

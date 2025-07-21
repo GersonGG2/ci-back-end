@@ -9,7 +9,7 @@ import { UpdateInscripcionDto } from './dto/update-inscripcione.dto';
 
 @ApiTags('inscripciones')
 @Controller('inscripciones')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class InscripcionesController {
   constructor(private readonly inscripcionesService: InscripcionesService) {}

@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('asistencias')
 @Controller('asistencias')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AsistenciasController {
   constructor(private readonly asistenciasService: AsistenciasService) {}

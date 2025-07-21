@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('cursos')
 @Controller('cursos')
-@UseGuards(JwtAuthGuard)
+// // @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CursosController {
   constructor(private readonly cursosService: CursosService) {}

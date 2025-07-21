@@ -12,7 +12,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('constancias')
 @Controller('constancias')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ConstanciasController {
   constructor(private readonly constanciasService: ConstanciasService) {}

@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('periodos')
 @Controller('periodos')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// // @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class PeriodosController {
   constructor(private readonly periodosService: PeriodosService) {}

@@ -4,14 +4,18 @@ import { Repository, DataSource } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginationResult } from 'src/common/interfaces/pagination-result.interface';
+import { PaginationService } from 'src/common/services/pagination.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private dataSource: DataSource
-  ) {}
+    private dataSource: DataSource,
+    private paginationService: PaginationService,
+  ) { }
 
   create(createUserDto: CreateUserDto) {
     const user = this.usersRepository.create(createUserDto);
@@ -22,29 +26,46 @@ export class UsersService {
     return this.usersRepository.find({ relations: ['roles'] });
   }
 
+  async findAllPaginated(paginationQuery: PaginationQueryDto): Promise<PaginationResult<User>> {
+    const queryBuilder = this.usersRepository.createQueryBuilder('user').leftJoinAndSelect('user.roles', 'roles');
+
+    // Si el sort no tiene punto, agrega el alias 'user.'
+    let sortField = paginationQuery.sort ? paginationQuery.sort : 'id';
+    if (!sortField.includes('.')) {
+      sortField = `user.${sortField}`;
+    }
+
+    queryBuilder.orderBy(sortField, paginationQuery.order || 'ASC');
+    return this.paginationService.paginate<User>(
+      queryBuilder,
+      { ...paginationQuery, sort: sortField },
+      ['user.nombre', 'user.email', 'user.apellidos']
+    );
+  }
+
   async findOne(id: number) {
-    const user = await this.usersRepository.findOne({ 
-      where: { id }, 
-      relations: ['roles'] 
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['roles']
     });
-    
+
     if (!user) {
       return null;
     }
-    
+
     return user;
   }
 
   async findByAuth0Id(auth0Id: string) {
-    const user = await this.usersRepository.findOne({ 
-      where: { auth0_id: auth0Id }, 
-      relations: ['roles'] 
+    const user = await this.usersRepository.findOne({
+      where: { auth0_id: auth0Id },
+      relations: ['roles']
     });
-    
+
     if (!user) {
       return null;
     }
-    
+
     return user;
   }
 
@@ -53,7 +74,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
-    
+
     await this.usersRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
@@ -63,38 +84,40 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
-    
+
     return this.usersRepository.remove(user);
   }
 
-  async assignRole(userId: number, roleId: number) {
-    // Usamos QueryRunner para hacer esto más eficiente
+  async setRoles(userId: number, roleIds: number[]) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     try {
-      // Verificar si el usuario existe
-      const user = await queryRunner.manager.findOne(User, { 
+      const user = await queryRunner.manager.findOne(User, {
         where: { id: userId },
         relations: ['roles']
       });
-      
+
       if (!user) {
         throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
       }
-      
-      // Insertar directamente en la tabla de relación usuarios_roles
+
+      // Elimina todos los roles actuales
       await queryRunner.manager.query(
-        `INSERT INTO usuarios_roles (usuario_id, rol_id) 
-         VALUES (?, ?) 
-         ON DUPLICATE KEY UPDATE usuario_id = VALUES(usuario_id)`,
-        [userId, roleId]
+        `DELETE FROM usuarios_roles WHERE usuario_id = ?`,
+        [userId]
       );
-      
+
+      // Asigna los nuevos roles
+      for (const roleId of roleIds) {
+        await queryRunner.manager.query(
+          `INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)`,
+          [userId, roleId]
+        );
+      }
+
       await queryRunner.commitTransaction();
-      
-      // Devolver el usuario actualizado con sus roles
       return this.findOne(userId);
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -103,4 +126,8 @@ export class UsersService {
       await queryRunner.release();
     }
   }
+
+
+
+
 }
