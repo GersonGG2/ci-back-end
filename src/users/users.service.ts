@@ -26,16 +26,31 @@ export class UsersService {
     return this.usersRepository.find({ relations: ['roles'] });
   }
 
-  async findAllPaginated(paginationQuery: PaginationQueryDto): Promise<PaginationResult<User>> {
+  async findAllPaginated(paginationQuery: PaginationQueryDto, role?: string): Promise<PaginationResult<User>> {
     const queryBuilder = this.usersRepository.createQueryBuilder('user').leftJoinAndSelect('user.roles', 'roles');
-
-    // Si el sort no tiene punto, agrega el alias 'user.'
-    let sortField = paginationQuery.sort ? paginationQuery.sort : 'id';
-    if (!sortField.includes('.')) {
-      sortField = `user.${sortField}`;
+  
+    // Filtro por rol
+    if (role) {
+      queryBuilder.andWhere('roles.nombre = :role', { role });
     }
+  
+  let sortField = paginationQuery.sort ? paginationQuery.sort : 'id';
+if (!sortField.includes('.')) {
+  sortField = `user.${sortField}`;
+}
 
-    queryBuilder.orderBy(sortField, paginationQuery.order || 'ASC');
+// TypeORM espera "ASC" | "DESC"
+const order: "ASC" | "DESC" = paginationQuery.order && paginationQuery.order.toLowerCase() === 'desc' ? "DESC" : "ASC";
+queryBuilder.orderBy(sortField, order);
+  
+    // Cambia aquí: usa searchValue en vez de search
+    if (paginationQuery.searchValue) {
+      queryBuilder.andWhere(
+        '(user.nombre LIKE :search OR user.email LIKE :search OR user.apellidos LIKE :search)',
+        { search: `%${paginationQuery.searchValue}%` }
+      );
+    }
+  
     return this.paginationService.paginate<User>(
       queryBuilder,
       { ...paginationQuery, sort: sortField },

@@ -6,13 +6,15 @@ import { Curso } from './entities/curso.entity';
 import { AuthModule } from '../auth/auth.module';
 import { PeriodosModule } from '../periodos/periodos.module';
 import { AcademiasModule } from '../academias/academias.module';
+import { CommonModule } from 'src/common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Curso]),
     AuthModule,
     PeriodosModule,
-    AcademiasModule
+    AcademiasModule,
+    CommonModule
   ],
   controllers: [CursosController],
   providers: [CursosService],

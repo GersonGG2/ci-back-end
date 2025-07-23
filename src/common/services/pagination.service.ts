@@ -5,26 +5,27 @@ import { PaginationResult } from '../interfaces/pagination-result.interface';
 
 @Injectable()
 export class PaginationService {
-    async paginate<T extends ObjectLiteral>( 
+    async paginate<T extends ObjectLiteral>(
         queryBuilder: SelectQueryBuilder<T>,
         paginationQuery: PaginationQueryDto,
         searchableColumns: string[] = [],
     ): Promise<PaginationResult<T>> {
-        const { page = 1, limit = 10, sort, order = 'ASC', search } = paginationQuery;
+        const { page = 1, limit = 10, sort, order = 'ASC', searchValue } = paginationQuery;
 
         // Aplicar búsqueda si se proporciona
-        if (search && searchableColumns.length > 0) {
+        if (searchValue && searchableColumns.length > 0) {
             queryBuilder.andWhere(
                 `(${searchableColumns
                     .map(column => `${column} LIKE :search`)
                     .join(' OR ')})`,
-                { search: `%${search}%` },
+                { search: `%${searchValue}%` },
             );
         }
 
         // Aplicar ordenamiento si se proporciona
         if (sort) {
-            queryBuilder.orderBy(`${sort}`, order);
+            const ormOrder: "ASC" | "DESC" = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+            queryBuilder.orderBy(`${sort}`, ormOrder);
         }
 
         // Obtener el total de registros

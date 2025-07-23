@@ -7,8 +7,8 @@ export class CreateCursoDto {
   @IsString()
   nombre: string;
 
-  @ApiProperty({ 
-    description: 'Objetivo del curso', 
+  @ApiProperty({
+    description: 'Objetivo del curso',
     example: 'Capacitar al personal docente en el uso de herramientas tecnológicas para el desarrollo'
   })
   @IsNotEmpty()
@@ -65,25 +65,25 @@ export class CreateCursoDto {
   @IsString()
   hora_fin: string;
 
-  @ApiProperty({ 
-    description: 'A quién está dirigido el curso', 
-    example: 'DOCENTES DE CIENCIAS BÁSICAS Y ÁREAS AFINES' 
+  @ApiProperty({
+    description: 'A quién está dirigido el curso',
+    example: 'DOCENTES DE CIENCIAS BÁSICAS Y ÁREAS AFINES'
   })
   @IsNotEmpty()
   @IsString()
   dirigido_a: string;
 
-  @ApiProperty({ 
-    description: 'Prerequisitos para tomar el curso', 
+  @ApiProperty({
+    description: 'Prerequisitos para tomar el curso',
     example: 'Conocimientos básicos de álgebra',
-    required: false 
+    required: false
   })
   @IsOptional()
   @IsString()
   prerequisitos?: string;
 
-  @ApiProperty({ 
-    description: 'Estado inicial del curso', 
+  @ApiProperty({
+    description: 'Estado inicial del curso',
     example: 'propuesto',
     enum: ['propuesto', 'aprobado', 'rechazado', 'finalizado'],
     default: 'propuesto',
@@ -92,4 +92,7 @@ export class CreateCursoDto {
   @IsOptional()
   @IsEnum(['propuesto', 'aprobado', 'rechazado', 'finalizado'])
   estado?: string;
+
+  @ApiProperty({ description: 'ID del usuario que crea el curso', example: 1, required: false })
+  createdBy?: number;
 }

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsDateString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsEnum, IsNumber } from 'class-validator';
 
 export class CreatePeriodoDto {
   @ApiProperty({ description: 'Nombre del periodo', example: 'Intersemestral Verano 2024' })
@@ -25,4 +25,10 @@ export class CreatePeriodoDto {
   })
   @IsEnum(['activo', 'inactivo', 'cerrado'])
   estado: string;
+
+  
+  @ApiProperty({ description: 'ID del usuario que crea el periodo', example: 1 })
+  @IsNotEmpty()
+  @IsNumber()
+  usuarioId: number; // <-- Agrega este campo aquí
 }

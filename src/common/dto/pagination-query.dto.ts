@@ -37,13 +37,13 @@ export class PaginationQueryDto {
   @ApiProperty({
     description: 'Dirección del ordenamiento',
     required: false,
-    enum: ['ASC', 'DESC'],
-    default: 'ASC'
+    enum: ['asc', 'desc'],
+    default: 'asc'
   })
   @IsOptional()
   @IsString()
-  @IsIn(['ASC', 'DESC'])
-  order?: 'ASC' | 'DESC' = 'ASC';
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc' = 'asc';
 
   @ApiProperty({
     description: 'Valor para búsqueda',
@@ -51,5 +51,5 @@ export class PaginationQueryDto {
   })
   @IsOptional()
   @IsString()
-  search?: string;
+  searchValue?: string;
 }

@@ -5,6 +5,8 @@ import { CursosService } from '../cursos/cursos.service';
 import { CreateInscripcionDto } from './dto/create-inscripcione.dto';
 import { UpdateInscripcionDto } from './dto/update-inscripcione.dto';
 import { Inscripcion } from './entities/inscripcione.entity';
+import { InscripcionFilterDto } from './dto/inscripcion-filter.dto';
+import { PaginationService } from 'src/common/services/pagination.service';
 
 @Injectable()
 export class InscripcionesService {
@@ -12,12 +14,13 @@ export class InscripcionesService {
     @InjectRepository(Inscripcion)
     private inscripcionesRepository: Repository<Inscripcion>,
     private cursosService: CursosService,
-  ) {}
+    private paginationService: PaginationService
+  ) { }
 
   async create(createInscripcionDto: CreateInscripcionDto, userId: number): Promise<Inscripcion> {
     // Verificar que el curso existe y está aprobado
     const curso = await this.cursosService.findOne(createInscripcionDto.cursoId);
-    
+
     if (curso.estado !== 'aprobado') {
       throw new BadRequestException('Solo es posible inscribirse a cursos aprobados');
     }
@@ -49,6 +52,36 @@ export class InscripcionesService {
     });
   }
 
+  async findAllFiltered(filter: InscripcionFilterDto) {
+    const qb = this.inscripcionesRepository.createQueryBuilder('inscripcion')
+      .leftJoinAndSelect('inscripcion.curso', 'curso')
+      .leftJoinAndSelect('inscripcion.docente', 'docente');
+
+    if (filter.cursoId) {
+      qb.andWhere('inscripcion.cursoId = :cursoId', { cursoId: filter.cursoId });
+    }
+    if (filter.docenteId) {
+      qb.andWhere('inscripcion.docenteId = :docenteId', { docenteId: filter.docenteId });
+    }
+    if (filter.searchValue) {
+      qb.andWhere(
+        '(curso.nombre LIKE :search OR docente.nombre LIKE :search OR docente.apellidos LIKE :search)',
+        { search: `%${filter.searchValue}%` }
+      );
+    }
+
+    let sortField = filter.sort || 'inscripcion.id';
+    if (sortField && !sortField.startsWith('inscripcion.')) {
+      sortField = `inscripcion.${sortField}`;
+    }
+    qb.orderBy(sortField, filter.order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC');
+
+    return this.paginationService.paginate(
+      qb,
+      { ...filter, sort: sortField },
+      ['curso.nombre', 'docente.nombre', 'docente.apellidos']
+    );
+  }
   async findByCurso(cursoId: number): Promise<Inscripcion[]> {
     return this.inscripcionesRepository.find({
       where: { cursoId },
@@ -78,7 +111,7 @@ export class InscripcionesService {
 
   async update(id: number, updateInscripcionDto: UpdateInscripcionDto): Promise<Inscripcion> {
     const inscripcion = await this.findOne(id);
-    
+
     // Si se está cambiando el curso, verificar que el nuevo curso exista y esté aprobado
     if (updateInscripcionDto.cursoId && updateInscripcionDto.cursoId !== inscripcion.cursoId) {
       const curso = await this.cursosService.findOne(updateInscripcionDto.cursoId);
@@ -86,7 +119,7 @@ export class InscripcionesService {
         throw new BadRequestException('Solo es posible inscribirse a cursos aprobados');
       }
     }
-    
+
     this.inscripcionesRepository.merge(inscripcion, updateInscripcionDto);
     return this.inscripcionesRepository.save(inscripcion);
   }
@@ -98,38 +131,38 @@ export class InscripcionesService {
 
   async aprobarInscripcion(id: number): Promise<Inscripcion> {
     const inscripcion = await this.findOne(id);
-    
+
     if (inscripcion.estado !== 'inscrito') {
       throw new BadRequestException('Solo se pueden aprobar inscripciones en estado "inscrito"');
     }
-    
+
     inscripcion.estado = 'aprobado';
     return this.inscripcionesRepository.save(inscripcion);
   }
 
   async reprobarInscripcion(id: number): Promise<Inscripcion> {
     const inscripcion = await this.findOne(id);
-    
+
     if (inscripcion.estado !== 'inscrito') {
       throw new BadRequestException('Solo se pueden reprobar inscripciones en estado "inscrito"');
     }
-    
+
     inscripcion.estado = 'reprobado';
     return this.inscripcionesRepository.save(inscripcion);
   }
 
   async cancelarInscripcion(id: number, userId: number): Promise<Inscripcion> {
     const inscripcion = await this.findOne(id);
-    
+
     // Solo el propio docente puede cancelar su inscripción
     if (inscripcion.docenteId !== userId) {
       throw new BadRequestException('Solo puedes cancelar tus propias inscripciones');
     }
-    
+
     if (inscripcion.estado !== 'inscrito') {
       throw new BadRequestException('Solo se pueden cancelar inscripciones en estado "inscrito"');
     }
-    
+
     inscripcion.estado = 'cancelado';
     return this.inscripcionesRepository.save(inscripcion);
   }

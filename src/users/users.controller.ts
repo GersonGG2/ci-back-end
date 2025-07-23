@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'; // AGREGAR ESTA LÍNEA
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'; // AGREGAR ESTA LÍNEA
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -31,8 +31,12 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'Obtener todos los usuarios con paginación y filtros' })
   @ApiPaginatedResponse(User)
-  async findAll(@Query() paginationQuery: PaginationQueryDto): Promise<StandardResponse<any>> {
-    const data = await this.usersService.findAllPaginated(paginationQuery);
+  @ApiQuery({ name: 'role', required: false, type: String, description: 'Filtrar por rol' }) // <-- agrega esto
+  async findAll(
+    @Query() paginationQuery: PaginationQueryDto,
+    @Query('role') role?: string
+  ): Promise<StandardResponse<any>> {
+    const data = await this.usersService.findAllPaginated(paginationQuery, role);
     return {
       data,
       message: 'Datos encontrados exitosamente',

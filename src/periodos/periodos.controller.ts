@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PeriodosService } from './periodos.service';
 import { CreatePeriodoDto } from './dto/create-periodo.dto';
@@ -6,28 +6,34 @@ import { UpdatePeriodoDto } from './dto/update-periodo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { PeriodoFilterDto } from './dto/periodo-filter.dto';
 
 @ApiTags('periodos')
 @Controller('periodos')
-// // @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiBearerAuth()
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @ApiBearerAuth()
 export class PeriodosController {
-  constructor(private readonly periodosService: PeriodosService) {}
+  constructor(private readonly periodosService: PeriodosService) { }
 
   @Post()
   @Roles('Admin')
   @ApiOperation({ summary: 'Crear un nuevo periodo' })
   @ApiResponse({ status: 201, description: 'Periodo creado exitosamente' })
-  create(@Body() createPeriodoDto: CreatePeriodoDto, @Req() req) {
-    const usuarioId = req.user.id;
-    return this.periodosService.create(createPeriodoDto, usuarioId);
+  create(@Body() createPeriodoDto: CreatePeriodoDto) {
+    return this.periodosService.create(createPeriodoDto, createPeriodoDto.usuarioId);
   }
 
+
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los periodos' })
+  @ApiOperation({ summary: 'Obtener todos los periodos con filtros y paginación' })
   @ApiResponse({ status: 200, description: 'Lista de periodos obtenida exitosamente' })
-  findAll() {
-    return this.periodosService.findAll();
+  async findAll(@Query() filtro: PeriodoFilterDto) {
+    const data = await this.periodosService.findAllFiltered(filtro);
+    return {
+      data,
+      message: 'Datos encontrados exitosamente',
+      status: 200,
+    };
   }
 
   @Get(':id')

@@ -7,6 +7,15 @@ export class CreateInscripcionDto {
   @IsNumber()
   cursoId: number;
 
+  @ApiProperty({
+    description: 'ID del docente que se inscribe (solo para pruebas, normalmente se toma del usuario autenticado)',
+    example: 1,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  docenteId?: number;
+
   @ApiProperty({ 
     description: 'Estado de la inscripción', 
     example: 'inscrito',
