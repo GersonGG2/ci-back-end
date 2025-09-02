@@ -10,6 +10,6 @@ import { CommonModule } from 'src/common/common.module';
 CommonModule],
   controllers: [UsersController],
   providers: [UsersService],
-  exports: [UsersService],
+  exports: [UsersService, TypeOrmModule],
 })
 export class UsersModule {}

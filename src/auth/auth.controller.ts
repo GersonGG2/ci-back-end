@@ -1,11 +1,11 @@
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Auth0Guard } from './guards/auth0.guard';
 import { Request } from 'express';
 
-// Definir una interfaz extendida
+// Define una interfaz extendida con el user
 interface RequestWithUser extends Request {
-  user: any;  // Puedes definir un tipo más específico si lo deseas
+  user: any;
 }
 
 @Controller('auth')
@@ -13,8 +13,15 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Get('profile')
-  // @UseGuards(JwtAuthGuard)
-  getProfile(@Req() req: RequestWithUser) {
-    return req.user;
+  @UseGuards(Auth0Guard)
+  async getProfile(@Req() req: RequestWithUser) {
+    console.log('Usuario en request:', req.user);
+
+    // Extraer token de la cabecera
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader?.split(' ')[1];
+
+    // Buscar o crear usuario con el token para obtener información adicional
+    return await this.authService.findOrCreateUser(req.user, accessToken);
   }
 }

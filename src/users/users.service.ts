@@ -15,7 +15,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
     private dataSource: DataSource,
     private paginationService: PaginationService,
-  ) { }
+  ) {}
 
   create(createUserDto: CreateUserDto) {
     const user = this.usersRepository.create(createUserDto);
@@ -26,42 +26,50 @@ export class UsersService {
     return this.usersRepository.find({ relations: ['roles'] });
   }
 
-  async findAllPaginated(paginationQuery: PaginationQueryDto, role?: string): Promise<PaginationResult<User>> {
-    const queryBuilder = this.usersRepository.createQueryBuilder('user').leftJoinAndSelect('user.roles', 'roles');
-  
+  async findAllPaginated(
+    paginationQuery: PaginationQueryDto,
+    role?: string,
+  ): Promise<PaginationResult<User>> {
+    const queryBuilder = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.roles', 'roles');
+
     // Filtro por rol
     if (role) {
       queryBuilder.andWhere('roles.nombre = :role', { role });
     }
-  
-  let sortField = paginationQuery.sort ? paginationQuery.sort : 'id';
-if (!sortField.includes('.')) {
-  sortField = `user.${sortField}`;
-}
 
-// TypeORM espera "ASC" | "DESC"
-const order: "ASC" | "DESC" = paginationQuery.order && paginationQuery.order.toLowerCase() === 'desc' ? "DESC" : "ASC";
-queryBuilder.orderBy(sortField, order);
-  
+    let sortField = paginationQuery.sort ? paginationQuery.sort : 'id';
+    if (!sortField.includes('.')) {
+      sortField = `user.${sortField}`;
+    }
+
+    // TypeORM espera "ASC" | "DESC"
+    const order: 'ASC' | 'DESC' =
+      paginationQuery.order && paginationQuery.order.toLowerCase() === 'desc'
+        ? 'DESC'
+        : 'ASC';
+    queryBuilder.orderBy(sortField, order);
+
     // Cambia aquí: usa searchValue en vez de search
     if (paginationQuery.searchValue) {
       queryBuilder.andWhere(
         '(user.nombre LIKE :search OR user.email LIKE :search OR user.apellidos LIKE :search)',
-        { search: `%${paginationQuery.searchValue}%` }
+        { search: `%${paginationQuery.searchValue}%` },
       );
     }
-  
+
     return this.paginationService.paginate<User>(
       queryBuilder,
       { ...paginationQuery, sort: sortField },
-      ['user.nombre', 'user.email', 'user.apellidos']
+      ['user.nombre', 'user.email', 'user.apellidos'],
     );
   }
 
   async findOne(id: number) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['roles']
+      relations: ['roles'],
     });
 
     if (!user) {
@@ -74,7 +82,7 @@ queryBuilder.orderBy(sortField, order);
   async findByAuth0Id(auth0Id: string) {
     const user = await this.usersRepository.findOne({
       where: { auth0_id: auth0Id },
-      relations: ['roles']
+      relations: ['roles'],
     });
 
     if (!user) {
@@ -111,7 +119,7 @@ queryBuilder.orderBy(sortField, order);
     try {
       const user = await queryRunner.manager.findOne(User, {
         where: { id: userId },
-        relations: ['roles']
+        relations: ['roles'],
       });
 
       if (!user) {
@@ -121,14 +129,14 @@ queryBuilder.orderBy(sortField, order);
       // Elimina todos los roles actuales
       await queryRunner.manager.query(
         `DELETE FROM usuarios_roles WHERE usuario_id = ?`,
-        [userId]
+        [userId],
       );
 
       // Asigna los nuevos roles
       for (const roleId of roleIds) {
         await queryRunner.manager.query(
           `INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)`,
-          [userId, roleId]
+          [userId, roleId],
         );
       }
 
@@ -144,5 +152,40 @@ queryBuilder.orderBy(sortField, order);
 
 
 
+  async findOneWithRoles(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
 
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    // Obtener roles del usuario
+    const roles = await this.usersRepository.query(
+      `SELECT r.id, r.nombre 
+     FROM roles r
+     JOIN usuarios_roles ur ON r.id = ur.rol_id
+     WHERE ur.usuario_id = ?`,
+      [id],
+    );
+
+    user.roles = roles;
+    return user;
+  }
+
+  async assignRole(userId: number, roleId: number): Promise<void> {
+    // Verificar si ya tiene este rol
+    const hasRole = await this.usersRepository.query(
+      'SELECT * FROM usuarios_roles WHERE usuario_id = ? AND rol_id = ?',
+      [userId, roleId],
+    );
+
+    if (hasRole.length === 0) {
+      await this.usersRepository.query(
+        'INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)',
+        [userId, roleId],
+      );
+    }
+  }
 }

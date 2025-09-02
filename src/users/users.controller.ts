@@ -1,5 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'; // AGREGAR ESTA LÍNEA
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  NotFoundException,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger'; // AGREGAR ESTA LÍNEA
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -11,12 +29,18 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { User } from './entities/user.entity';
 import { ApiResponse as StandardResponse } from 'src/common/interfaces/pagination-result.interface'; // 👈 Agrega esta línea
 import { SetRolesDto } from './dto/set-roles.dto';
+import { Auth0Guard } from 'src/auth/guards/auth0.guard';
+import { CompleteProfileDto } from './dto/CompleteProfileDto';
+
+interface RequestWithUser extends Request {
+  user: any;
+}
 
 @ApiTags('users') // AGREGAR ESTA LÍNEA
 @ApiBearerAuth() // AGREGAR ESTA LÍNEA
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   // @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,14 +53,24 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los usuarios con paginación y filtros' })
+  @ApiOperation({
+    summary: 'Obtener todos los usuarios con paginación y filtros',
+  })
   @ApiPaginatedResponse(User)
-  @ApiQuery({ name: 'role', required: false, type: String, description: 'Filtrar por rol' }) // <-- agrega esto
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    type: String,
+    description: 'Filtrar por rol',
+  }) // <-- agrega esto
   async findAll(
     @Query() paginationQuery: PaginationQueryDto,
-    @Query('role') role?: string
+    @Query('role') role?: string,
   ): Promise<StandardResponse<any>> {
-    const data = await this.usersService.findAllPaginated(paginationQuery, role);
+    const data = await this.usersService.findAllPaginated(
+      paginationQuery,
+      role,
+    );
     return {
       data,
       message: 'Datos encontrados exitosamente',
@@ -73,8 +107,6 @@ export class UsersController {
     return this.usersService.remove(+id);
   }
 
-
-
   @Patch(':userId/roles')
   @ApiOperation({ summary: 'Reemplazar todos los roles de un usuario' })
   @ApiResponse({ status: 200, description: 'Roles actualizados exitosamente' })
@@ -85,5 +117,31 @@ export class UsersController {
     return this.usersService.setRoles(+userId, setRolesDto.roleIds);
   }
 
+  // Añadir este nuevo endpoint
+  @Patch('complete-profile')
+  @UseGuards(Auth0Guard)
+  async completeProfile(
+    @Req() req: RequestWithUser,
+    @Body() updateProfileDto: CompleteProfileDto,
+  ) {
+    // Obtener usuario por auth0_id
+    const user = await this.usersService.findByAuth0Id(req.user.auth0Id);
 
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Actualizar datos básicos
+    const updatedUser = await this.usersService.update(user.id, {
+      nombre: updateProfileDto.nombre,
+      apellidos: updateProfileDto.apellidos,
+    });
+
+    // Si se especifica rol y es diferente al actual, actualizarlo
+    if (updateProfileDto.rolId) {
+      await this.usersService.assignRole(user.id, updateProfileDto.rolId);
+    }
+
+    return this.usersService.findOneWithRoles(user.id);
+  }
 }
