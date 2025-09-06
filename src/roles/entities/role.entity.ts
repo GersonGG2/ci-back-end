@@ -1,31 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../../users/entities/user.entity';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('roles')
 export class Role {
-  @ApiProperty({ example: 1, description: 'ID único del rol' })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ example: 'Admin', description: 'Nombre del rol' })
-  @Column({ unique: true, name: 'nombre' }) // 👈 Cambiado a 'nombre' para coincidir con la BD
-  name: string;
+  @Column({ unique: true })
+  nombre: string;
 
-  // No incluir description porque no existe en tu esquema de BD
-  // @Column({ nullable: true })
-  // description: string;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 
-  @Column({ 
-    type: 'timestamp', 
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP'
-  })
+  @UpdateDateColumn({ name: 'updated_at' })
   updated_at: Date;
-
-  @ManyToMany(() => User, user => user.roles)
-  users: User[];
 }

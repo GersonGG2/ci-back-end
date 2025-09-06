@@ -29,13 +29,13 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { User } from './entities/user.entity';
 import { ApiResponse as StandardResponse } from 'src/common/interfaces/pagination-result.interface'; // 👈 Agrega esta línea
 import { SetRolesDto } from './dto/set-roles.dto';
-import { Auth0Guard } from 'src/auth/guards/auth0.guard';
 import { CompleteProfileDto } from './dto/CompleteProfileDto';
 
 interface RequestWithUser extends Request {
   user: any;
 }
 
+@UseGuards(JwtAuthGuard)
 @ApiTags('users') // AGREGAR ESTA LÍNEA
 @ApiBearerAuth() // AGREGAR ESTA LÍNEA
 @Controller('users')
@@ -118,28 +118,29 @@ export class UsersController {
   }
 
   // Añadir este nuevo endpoint
+  // Añade este endpoint a tu UsersController
+
   @Patch('complete-profile')
-  @UseGuards(Auth0Guard)
+  @UseGuards(JwtAuthGuard)
   async completeProfile(
     @Req() req: RequestWithUser,
-    @Body() updateProfileDto: CompleteProfileDto,
+    @Body() profileDto: CompleteProfileDto,
   ) {
-    // Obtener usuario por auth0_id
-    const user = await this.usersService.findByAuth0Id(req.user.auth0Id);
+    const user = await this.usersService.findOne(req.user.userId);
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
     // Actualizar datos básicos
-    const updatedUser = await this.usersService.update(user.id, {
-      nombre: updateProfileDto.nombre,
-      apellidos: updateProfileDto.apellidos,
+    await this.usersService.update(user.id, {
+      nombre: profileDto.nombre,
+      apellidos: profileDto.apellidos,
     });
 
     // Si se especifica rol y es diferente al actual, actualizarlo
-    if (updateProfileDto.rolId) {
-      await this.usersService.assignRole(user.id, updateProfileDto.rolId);
+    if (profileDto.rolId) {
+      await this.usersService.assignRole(user.id, profileDto.rolId);
     }
 
     return this.usersService.findOneWithRoles(user.id);

@@ -1,14 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRoleDto {
-  @ApiProperty({
-    description: 'Nombre del rol',
-    example: 'Admin'
-  })
+  @ApiProperty({ description: 'Nombre del rol' })
   @IsNotEmpty()
   @IsString()
-  name: string;
-  
-  // Elimina la propiedad description ya que no existe en la BD
+  nombre: string;
 }

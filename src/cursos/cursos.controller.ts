@@ -8,6 +8,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CursoFilterDto } from './dto/curso-filter.dto';
 
+@UseGuards(JwtAuthGuard)
 @ApiTags('cursos')
 @Controller('cursos')
 // // @UseGuards(JwtAuthGuard)

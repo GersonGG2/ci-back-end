@@ -13,6 +13,8 @@ import { InscripcionesModule } from './inscripciones/inscripciones.module';
 import { CursosModule } from './cursos/cursos.module';
 import { AcademiasModule } from './academias/academias.module';
 import { CommonModule } from './common/common.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { RolesFlagsInterceptor } from './common/interceptors/roles-flags.interceptor';
 
 @Module({
   imports: [
@@ -43,6 +45,14 @@ import { CommonModule } from './common/common.module';
     ConstanciasModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+ providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RolesFlagsInterceptor,
+    },
+  ],
 })
 export class AppModule {}
+
+

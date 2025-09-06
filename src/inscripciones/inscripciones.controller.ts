@@ -8,6 +8,7 @@ import { CreateInscripcionDto } from './dto/create-inscripcione.dto';
 import { UpdateInscripcionDto } from './dto/update-inscripcione.dto';
 import { InscripcionFilterDto } from './dto/inscripcion-filter.dto';
 
+@UseGuards(JwtAuthGuard)
 @ApiTags('inscripciones')
 @Controller('inscripciones')
 // @UseGuards(JwtAuthGuard)

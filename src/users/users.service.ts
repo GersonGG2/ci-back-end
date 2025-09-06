@@ -4,9 +4,9 @@ import { Repository, DataSource } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { PaginationResult } from 'src/common/interfaces/pagination-result.interface';
-import { PaginationService } from 'src/common/services/pagination.service';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { PaginationResult } from '../common/interfaces/pagination-result.interface';
+import { PaginationService } from '../common/services/pagination.service';
 
 @Injectable()
 export class UsersService {
@@ -66,30 +66,21 @@ export class UsersService {
     );
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<User | null> {
     const user = await this.usersRepository.findOne({
       where: { id },
       relations: ['roles'],
     });
 
-    if (!user) {
-      return null;
-    }
-
     return user;
   }
 
-  async findByAuth0Id(auth0Id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { auth0_id: auth0Id },
+  // Método para buscar por email (NECESARIO PARA AUTENTICACIÓN)
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { email },
       relations: ['roles'],
     });
-
-    if (!user) {
-      return null;
-    }
-
-    return user;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
@@ -150,8 +141,6 @@ export class UsersService {
     }
   }
 
-
-
   async findOneWithRoles(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
@@ -164,9 +153,9 @@ export class UsersService {
     // Obtener roles del usuario
     const roles = await this.usersRepository.query(
       `SELECT r.id, r.nombre 
-     FROM roles r
-     JOIN usuarios_roles ur ON r.id = ur.rol_id
-     WHERE ur.usuario_id = ?`,
+       FROM roles r
+       JOIN usuarios_roles ur ON r.id = ur.rol_id
+       WHERE ur.usuario_id = ?`,
       [id],
     );
 

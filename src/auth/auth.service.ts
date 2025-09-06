@@ -1,90 +1,86 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './dto/login.dto';
+import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import { UsersService } from 'src/users/users.service';
+import { RegisterDto } from '../users/dto/register.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-    private configService: ConfigService,
+    private usersService: UsersService,
+    private jwtService: JwtService,
   ) {}
 
-  async getUserInfo(accessToken: string) {
-    try {
-      const userInfoUrl = `https://${this.configService.get('AUTH0_DOMAIN')}/userinfo`;
-      const response = await axios.get(userInfoUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error obteniendo información de usuario:', error);
-      return null;
+   async register(registerDto: RegisterDto) {
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new ConflictException('El email ya está registrado');
     }
-  }
-
-  async findOrCreateUser(auth0User: any, accessToken?: string) {
-    console.log('Auth0User en findOrCreateUser:', auth0User);
-
-    // Extraer auth0Id
-    const auth0Id = auth0User.auth0Id || auth0User.sub;
-    
-    // Buscar usuario por auth0_id
-    let user = await this.usersRepository.findOne({
-      where: { auth0_id: auth0Id },
-    });
-
-    // Si el usuario existe, devolverlo
-    if (user) {
-      console.log('Usuario encontrado:', user);
-      return user;
-    }
-
-    // Si tenemos accessToken, intentar obtener más información
-    let email = auth0User.email;
-    let nombre = auth0User.nombre || 'Usuario';
-    let apellidos = auth0User.apellidos || 'Nuevo';
-
-    if (accessToken) {
-      const userInfo = await this.getUserInfo(accessToken);
-      if (userInfo) {
-        console.log('UserInfo obtenido:', userInfo);
-        email = userInfo.email || email;
-        nombre = userInfo.name || userInfo.nickname || nombre;
-        apellidos = userInfo.family_name || apellidos;
-      }
-    }
-
-    // Si no hay email, usar el fallback
-    if (!email) {
-      email = `${auth0Id.split('|')[1]}@example.com`;
-    }
-
-    console.log(`Creando usuario con email: ${email}, nombre: ${nombre}`);
-
-    // Crear nuevo usuario
-    const newUser = this.usersRepository.create({
-      auth0_id: auth0Id,
-      email: email,
-      nombre: nombre,
-      apellidos: apellidos,
+  
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+  
+    const newUser = await this.usersService.create({
+      email: registerDto.email,
+      nombre: registerDto.nombre,
+      apellidos: registerDto.apellidos,
+      password: hashedPassword,
       estado: true,
     });
+  
+    // Asignar múltiples roles si existen, si no asigna Docente por defecto
+    if (registerDto.roles && registerDto.roles.length > 0) {
+      await this.usersService.setRoles(newUser.id, registerDto.roles);
+    } else {
+      await this.usersService.assignRole(newUser.id, 2); // Docente por defecto
+    }
+  
+    const userWithRoles = await this.usersService.findOneWithRoles(newUser.id);
+  
+    const { password, ...userResponse } = userWithRoles;
+    return userResponse;
+  }
 
-    // Guardar en DB
-    const savedUser = await this.usersRepository.save(newUser);
+  async login(loginDto: LoginDto) {
+    // Buscar usuario por email
+    const user = await this.usersService.findByEmail(loginDto.email);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+  
+    // Verificar contraseña
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+  
+    // Cargar roles
+    const userWithRoles = await this.usersService.findOneWithRoles(user.id);
     
-    // Asignar rol "Docente" (ID 2)
-    await this.usersRepository.query(
-      'INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)',
-      [savedUser.id, 2]
-    );
-    
-    return savedUser;
+    // Crear payload para el token JWT
+    const roles = userWithRoles.roles.map(role => role.nombre);
+    const payload = { 
+      sub: user.id, 
+      email: user.email,
+      roles: roles
+    };
+  
+    // Generar token JWT y devolver respuesta sin password
+    const { password, ...userWithoutPassword } = userWithRoles;
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        ...userWithoutPassword
+      }
+    };
+  }
+
+  async validateUser(id: number) {
+    return this.usersService.findOne(id);
   }
 }

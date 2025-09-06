@@ -13,7 +13,10 @@ export class RolesService {
   ) {}
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
-    const role = this.rolesRepository.create(createRoleDto);
+    // Crear objeto explícitamente
+    const role = this.rolesRepository.create({
+      nombre: createRoleDto.nombre
+    });
     return this.rolesRepository.save(role);
   }
 
@@ -32,10 +35,16 @@ export class RolesService {
   }
 
   async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
-    const role = await this.findOne(id);
+    // Primero verificamos que exista
+    await this.findOne(id);
     
-    this.rolesRepository.merge(role, updateRoleDto);
-    return this.rolesRepository.save(role);
+    // Actualizamos directamente
+    await this.rolesRepository.update(id, {
+      nombre: updateRoleDto.nombre
+    });
+    
+    // Retornamos el rol actualizado
+    return this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {
