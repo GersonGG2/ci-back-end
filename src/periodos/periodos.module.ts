@@ -5,6 +5,7 @@ import { PeriodosController } from './periodos.controller';
 import { Periodo } from './entities/periodo.entity';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from 'src/common/common.module';
+import { PeriodosGateway } from './periodos.gateway';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { CommonModule } from 'src/common/common.module';
     AuthModule,CommonModule
   ],
   controllers: [PeriodosController],
-  providers: [PeriodosService],
+  providers: [PeriodosService, PeriodosGateway],
   exports: [PeriodosService]
 })
 export class PeriodosModule {}

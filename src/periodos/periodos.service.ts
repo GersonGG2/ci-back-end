@@ -6,6 +6,7 @@ import { CreatePeriodoDto } from './dto/create-periodo.dto';
 import { UpdatePeriodoDto } from './dto/update-periodo.dto';
 import { PeriodoFilterDto } from './dto/periodo-filter.dto';
 import { PaginationService } from 'src/common/services/pagination.service';
+import { PeriodosGateway } from './periodos.gateway';
 
 @Injectable()
 export class PeriodosService {
@@ -13,12 +14,16 @@ export class PeriodosService {
     @InjectRepository(Periodo)
     private periodosRepository: Repository<Periodo>,
     private paginationService: PaginationService,
-  ) { }
+    private periodosGateway: PeriodosGateway,
+  ) {}
 
-  async create(createPeriodoDto: CreatePeriodoDto, usuarioId: number): Promise<Periodo> {
+  async create(
+    createPeriodoDto: CreatePeriodoDto,
+    usuarioId: number,
+  ): Promise<Periodo> {
     const periodo = this.periodosRepository.create({
       ...createPeriodoDto,
-      usuarioId
+      usuarioId,
     });
 
     return this.periodosRepository.save(periodo);
@@ -26,14 +31,14 @@ export class PeriodosService {
 
   async findAll(): Promise<Periodo[]> {
     return this.periodosRepository.find({
-      relations: ['usuario']
+      relations: ['usuario'],
     });
   }
 
   async findOne(id: number): Promise<Periodo> {
     const periodo = await this.periodosRepository.findOne({
       where: { id },
-      relations: ['usuario']
+      relations: ['usuario'],
     });
 
     if (!periodo) {
@@ -43,11 +48,23 @@ export class PeriodosService {
     return periodo;
   }
 
-  async update(id: number, updatePeriodoDto: UpdatePeriodoDto): Promise<Periodo> {
+  async update(
+    id: number,
+    updatePeriodoDto: UpdatePeriodoDto,
+  ): Promise<Periodo> {
     const periodo = await this.findOne(id);
+    const estadoAnterior = periodo.estado;
 
     this.periodosRepository.merge(periodo, updatePeriodoDto);
-    return this.periodosRepository.save(periodo);
+    const saved = await this.periodosRepository.save(periodo);
+
+    // Si el estado cambió a 'activo', emite el evento
+    if (updatePeriodoDto.estado === 'activo' && estadoAnterior !== 'activo') {
+      console.log('Emitiendo evento periodoAperturado (por update)', saved);
+      this.periodosGateway.notifyPeriodoAperturado(saved);
+    }
+
+    return saved;
   }
 
   async remove(id: number): Promise<void> {
@@ -56,10 +73,12 @@ export class PeriodosService {
   }
 
   async activarPeriodo(id: number): Promise<Periodo> {
-  
     const periodo = await this.findOne(id);
     periodo.estado = 'activo';
-    return this.periodosRepository.save(periodo);
+    const saved = await this.periodosRepository.save(periodo);
+    console.log('Emitiendo evento periodoAperturado', saved);
+    this.periodosGateway.notifyPeriodoAperturado(saved);
+    return saved;
   }
 
   async cerrarPeriodo(id: number): Promise<Periodo> {
@@ -68,23 +87,27 @@ export class PeriodosService {
     return this.periodosRepository.save(periodo);
   }
 
-    async findAllFiltered(filtro: PeriodoFilterDto) {
-    const qb = this.periodosRepository.createQueryBuilder('periodo').leftJoinAndSelect('periodo.usuario', 'usuario');
-  
+  async findAllFiltered(filtro: PeriodoFilterDto) {
+    const qb = this.periodosRepository
+      .createQueryBuilder('periodo')
+      .leftJoinAndSelect('periodo.usuario', 'usuario');
+
     if (filtro.estado) {
       qb.andWhere('periodo.estado = :estado', { estado: filtro.estado });
     }
     if (filtro.fecha_inicio_desde) {
-      qb.andWhere('periodo.fecha_inicio >= :desde', { desde: filtro.fecha_inicio_desde });
+      qb.andWhere('periodo.fecha_inicio >= :desde', {
+        desde: filtro.fecha_inicio_desde,
+      });
     }
     if (filtro.fecha_inicio_hasta) {
-      qb.andWhere('periodo.fecha_inicio <= :hasta', { hasta: filtro.fecha_inicio_hasta });
+      qb.andWhere('periodo.fecha_inicio <= :hasta', {
+        hasta: filtro.fecha_inicio_hasta,
+      });
     }
-  
-    return this.paginationService.paginate<Periodo>(
-      qb,
-      filtro,
-      ['periodo.nombre']
-    );
+
+    return this.paginationService.paginate<Periodo>(qb, filtro, [
+      'periodo.nombre',
+    ]);
   }
 }

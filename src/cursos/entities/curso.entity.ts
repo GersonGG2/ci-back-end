@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { Periodo } from '../../periodos/entities/periodo.entity';
 import { Academia } from '../../academias/entities/academia.entity';
 import { Inscripcion } from 'src/inscripciones/entities/inscripcione.entity';
@@ -18,14 +25,14 @@ export class Curso {
   @Column({ name: 'periodo_id' })
   periodoId: number;
 
-  @ManyToOne(() => Periodo, periodo => periodo.cursos)
+  @ManyToOne(() => Periodo, (periodo) => periodo.cursos)
   @JoinColumn({ name: 'periodo_id' })
   periodo: Periodo;
 
   @Column({ name: 'academia_id' })
   academiaId: number;
 
-  @ManyToOne(() => Academia, academia => academia.cursos)
+  @ManyToOne(() => Academia, (academia) => academia.cursos)
   @JoinColumn({ name: 'academia_id' })
   academia: Academia;
 
@@ -65,8 +72,8 @@ export class Curso {
 
   @Column({
     type: 'enum',
-    enum: ['propuesto', 'aprobado', 'rechazado', 'finalizado'],
-    default: 'propuesto'
+    enum: ['nuevo', 'propuesto', 'aprobado', 'rechazado', 'finalizado'],
+    default: 'nuevo',
   })
   estado: string;
 
@@ -77,16 +84,16 @@ export class Curso {
   @JoinColumn({ name: 'created_by' })
   creador: User;
 
-  @OneToMany(() => Inscripcion, inscripcion => inscripcion.curso)
+  @OneToMany(() => Inscripcion, (inscripcion) => inscripcion.curso)
   inscripciones: Inscripcion[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @Column({ 
-    type: 'timestamp', 
+  @Column({
+    type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP'
+    onUpdate: 'CURRENT_TIMESTAMP',
   })
   updated_at: Date;
 }

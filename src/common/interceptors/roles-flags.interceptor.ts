@@ -2,14 +2,10 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-function getRoleFlags(user: any) {
+export function getRoleFlags(user: any) {
   let roles: string[] = [];
   if (Array.isArray(user?.roles)) {
-    if (typeof user.roles[0] === 'string') {
-      roles = user.roles;
-    } else if (typeof user.roles[0] === 'object') {
-      roles = user.roles.map(r => r.nombre);
-    }
+    roles = user.roles.map(r => typeof r === 'string' ? r : r.nombre);
   }
   return {
     isDocente: roles.includes('Docente'),

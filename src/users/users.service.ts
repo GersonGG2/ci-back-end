@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -99,6 +99,29 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
 
+    // Verificar si el usuario está relacionado con inscripciones
+    const inscripciones = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM inscripciones WHERE docente_id = ?',
+      [id],
+    );
+
+    if (inscripciones[0].count > 0) {
+      // Realizar soft delete
+      await this.usersRepository.update(id, { estado: false });
+
+      // Lanzar error con código 409 (Conflict)
+      throw new ConflictException({
+        message: `No se puede eliminar el usuario porque está inscrito en ${inscripciones[0].count} curso(s)`,
+        details: {
+          inscripciones: inscripciones[0].count,
+          userId: id,
+          action: 'desactivado',
+        },
+        softDelete: true,
+      });
+    }
+
+    // Si no hay restricciones, eliminar físicamente
     return this.usersRepository.remove(user);
   }
 
