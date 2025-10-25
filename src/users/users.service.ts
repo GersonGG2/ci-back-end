@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PaginationResult } from '../common/interfaces/pagination-result.interface';
 import { PaginationService } from '../common/services/pagination.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -15,7 +16,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
     private dataSource: DataSource,
     private paginationService: PaginationService,
-  ) {}
+  ) { }
 
   create(createUserDto: CreateUserDto) {
     const user = this.usersRepository.create(createUserDto);
@@ -89,6 +90,9 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
 
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
     await this.usersRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
