@@ -87,27 +87,36 @@ export class PeriodosService {
     return this.periodosRepository.save(periodo);
   }
 
-  async findAllFiltered(filtro: PeriodoFilterDto) {
-    const qb = this.periodosRepository
-      .createQueryBuilder('periodo')
-      .leftJoinAndSelect('periodo.usuario', 'usuario');
-
-    if (filtro.estado) {
-      qb.andWhere('periodo.estado = :estado', { estado: filtro.estado });
-    }
-    if (filtro.fecha_inicio_desde) {
-      qb.andWhere('periodo.fecha_inicio >= :desde', {
-        desde: filtro.fecha_inicio_desde,
-      });
-    }
-    if (filtro.fecha_inicio_hasta) {
-      qb.andWhere('periodo.fecha_inicio <= :hasta', {
-        hasta: filtro.fecha_inicio_hasta,
-      });
-    }
-
-    return this.paginationService.paginate<Periodo>(qb, filtro, [
-      'periodo.nombre',
-    ]);
+   async findAllFiltered(filtro: PeriodoFilterDto) {
+      const qb = this.periodosRepository
+        .createQueryBuilder('periodo')
+        .leftJoinAndSelect('periodo.usuario', 'usuario');
+  
+      if (filtro.estado) {
+        qb.andWhere('periodo.estado = :estado', { estado: filtro.estado });
+      }
+      if (filtro.nombre) {
+        qb.andWhere('periodo.nombre LIKE :nombre', { nombre: `%${filtro.nombre}%` });
+      }
+      if (filtro.fecha_inicio) {
+        qb.andWhere('periodo.fecha_inicio = :fecha_inicio', { fecha_inicio: filtro.fecha_inicio });
+      }
+      if (filtro.fecha_fin) {
+        qb.andWhere('periodo.fecha_fin = :fecha_fin', { fecha_fin: filtro.fecha_fin });
+      }
+      if (filtro.fecha_inicio_desde) {
+        qb.andWhere('periodo.fecha_inicio >= :desde', {
+          desde: filtro.fecha_inicio_desde,
+        });
+      }
+      if (filtro.fecha_inicio_hasta) {
+        qb.andWhere('periodo.fecha_inicio <= :hasta', {
+          hasta: filtro.fecha_inicio_hasta,
+        });
+      }
+  
+      return this.paginationService.paginate<Periodo>(qb, filtro, [
+        'periodo.nombre',
+      ]);
   }
 }

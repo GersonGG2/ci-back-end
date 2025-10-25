@@ -27,4 +27,14 @@ export class PeriodoFilterDto {
 
   @ApiPropertyOptional({ type: String })
   searchValue?: string;
+
+
+  @ApiPropertyOptional({ type: String, description: 'Filtrar por nombre' })
+nombre?: string;
+
+@ApiPropertyOptional({ type: String, description: 'Filtrar por fecha de inicio' })
+fecha_inicio?: string;
+
+@ApiPropertyOptional({ type: String, description: 'Filtrar por fecha de fin' })
+fecha_fin?: string;
 }
