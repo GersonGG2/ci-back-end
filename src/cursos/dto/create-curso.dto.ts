@@ -137,4 +137,13 @@ export class CreateCursoDto {
     required: false,
   })
   createdBy?: number;
+
+  @ApiProperty({
+    description: 'Tipo de curso',
+    example: 'presencial',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  tipo?: string;
 }

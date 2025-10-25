@@ -77,6 +77,9 @@ export class Curso {
   })
   estado: string;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  tipo: string;
+
   @Column({ name: 'created_by' })
   createdBy: number;
 
