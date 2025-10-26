@@ -1,13 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsArray, IsEnum, IsDefined, IsNumber } from 'class-validator';
 
 export class CambiarEstatusCursosDto {
   @ApiProperty({
     description: 'IDs de los cursos a cambiar estado',
     example: [1, 2, 3],
     type: [Number],
+    required: true,
   })
-  @IsNotEmpty()
+  @IsDefined()
   @IsArray()
   @IsNumber({}, { each: true })
   cursosIds: number[];
@@ -16,8 +17,9 @@ export class CambiarEstatusCursosDto {
     description: 'Nuevo estado para los cursos',
     example: 'aprobado',
     enum: ['nuevo', 'propuesto', 'aprobado', 'rechazado', 'finalizado'],
+    required: true,
   })
-  @IsNotEmpty()
+  @IsDefined()
   @IsEnum(['nuevo', 'propuesto', 'aprobado', 'rechazado', 'finalizado'])
   nuevoEstado: string;
 }

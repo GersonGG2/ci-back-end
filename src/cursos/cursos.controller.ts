@@ -18,6 +18,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { CursosService } from './cursos.service';
 import { CreateCursoDto } from './dto/create-curso.dto';
@@ -27,6 +28,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CursoFilterDto } from './dto/curso-filter.dto';
 import { CambiarEstatusCursosDto } from './dto/cambiar-estatus-curso.dto';
+import { EliminarMultiplesCursosDto } from './dto/EliminarMultiplesCursosDto';
 
 @UseGuards(JwtAuthGuard)
 @ApiTags('cursos')
@@ -34,7 +36,7 @@ import { CambiarEstatusCursosDto } from './dto/cambiar-estatus-curso.dto';
 // // @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CursosController {
-  constructor(private readonly cursosService: CursosService) {}
+  constructor(private readonly cursosService: CursosService) { }
 
   @Post()
   // //@UseGuards(RolesGuard)
@@ -112,7 +114,7 @@ export class CursosController {
     enum: ['enviado', 'propuesto', 'aprobado', 'rechazado', 'finalizado'],
     description: 'Filtrar por estado del curso',
   })
-  
+
   @Get()
   @ApiOperation({ summary: 'Obtener todos los cursos con filtros' })
   @ApiQuery({ name: 'instructorId', required: false, type: Number })
@@ -261,6 +263,7 @@ export class CursosController {
   cambiarEstatusCursos(
     @Body() cambiarEstatusCursosDto: CambiarEstatusCursosDto,
   ) {
+    console.log('DTO recibido en controlador:', cambiarEstatusCursosDto);
     return this.cursosService.cambiarEstatusCursos(
       cambiarEstatusCursosDto.cursosIds,
       cambiarEstatusCursosDto.nuevoEstado,
@@ -272,5 +275,18 @@ export class CursosController {
   @ApiResponse({ status: 200, description: 'Curso enviado exitosamente' })
   enviar(@Param('id') id: string) {
     return this.cursosService.enviarCurso(+id);
+  }
+
+
+  @Post('eliminar-multiples')
+  @ApiBody({ type: EliminarMultiplesCursosDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Cursos eliminados exitosamente',
+  })
+  async eliminarMultiplesCursos(
+    @Body() body: EliminarMultiplesCursosDto,
+  ) {
+    return this.cursosService.eliminarMultiplesCursos(body.cursosIds);
   }
 }

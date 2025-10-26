@@ -72,7 +72,7 @@ export class CursosService {
 
   async findAll(): Promise<Curso[]> {
     return this.cursosRepository.find({
-      relations: ['periodo', 'academia', 'instructor','instructorDos', 'creador'],
+      relations: ['periodo', 'academia', 'instructor', 'instructorDos', 'creador'],
     });
   }
 
@@ -300,12 +300,13 @@ export class CursosService {
   }
 
   async cambiarEstatusCursos(
-    ids: number[],
+    cursosIds: number[],
     nuevoEstado: string,
   ): Promise<{
     exitosos: Curso[];
     fallidos: { id: number; razon: string }[];
   }> {
+    console.log('cursosIds recibido en servicio:', cursosIds);
     const resultados: {
       exitosos: Curso[];
       fallidos: { id: number; razon: string }[];
@@ -314,15 +315,14 @@ export class CursosService {
       fallidos: [],
     };
 
+    // Convierte todos los IDs a número y filtra los inválidos
+    const ids = (cursosIds ?? []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+    console.log('IDs procesados:', ids);
+    if (ids.length === 0) {
+      throw new BadRequestException('No se recibieron IDs válidos de cursos');
+    }
+
     for (const id of ids) {
-      // Validar ID antes de llamar a cambiarEstadoCurso
-      if (!id || isNaN(id) || typeof id !== 'number' || id <= 0) {
-        resultados.fallidos.push({
-          id,
-          razon: 'ID de curso inválido',
-        });
-        continue;
-      }
       try {
         const curso = await this.cambiarEstadoCurso(id, nuevoEstado);
         resultados.exitosos.push(curso);
@@ -463,5 +463,51 @@ export class CursosService {
         'Error al cambiar estado de cursos',
       );
     }
+  }
+
+
+  async eliminarMultiplesCursos(
+    cursosIds: number[],
+  ): Promise<{
+    eliminados: number[];
+    fallidos: { id: number; razon: string }[];
+  }> {
+    const resultados: {
+      eliminados: number[];
+      fallidos: { id: number; razon: string }[];
+    } = {
+      eliminados: [],
+      fallidos: [],
+    };
+
+    // Estados permitidos para eliminar
+    const estadosPermitidos = ['nuevo', 'propuesto', 'rechazado', 'finalizado'];
+
+    // Validar y limpiar IDs
+    const ids = (cursosIds ?? []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+
+    if (ids.length === 0) {
+      throw new BadRequestException('No se recibieron IDs válidos de cursos');
+    }
+
+    for (const id of ids) {
+      try {
+        const curso = await this.cursosRepository.findOneBy({ id });
+        if (!curso) {
+          resultados.fallidos.push({ id, razon: 'Curso no encontrado' });
+          continue;
+        }
+        if (!estadosPermitidos.includes(curso.estado)) {
+          resultados.fallidos.push({ id, razon: `No se puede eliminar un curso en estado "${curso.estado}"` });
+          continue;
+        }
+        await this.cursosRepository.remove(curso);
+        resultados.eliminados.push(id);
+      } catch (error) {
+        resultados.fallidos.push({ id, razon: error.message || 'Error desconocido' });
+      }
+    }
+
+    return resultados;
   }
 }
