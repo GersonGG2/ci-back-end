@@ -23,7 +23,7 @@ export class CursosService {
     private periodosService: PeriodosService,
     private academiasService: AcademiasService,
     private paginationService: PaginationService,
-  ) {}
+  ) { }
 
   private readonly TRANSICIONES_PERMITIDAS = {
     nuevo: ['propuesto', 'rechazado'],
@@ -279,6 +279,10 @@ export class CursosService {
       qb.andWhere('curso.instructorId = :instructorId', {
         instructorId: filter.instructorId,
       });
+    }
+
+    if (filter.tipo) {
+      qb.andWhere('curso.tipo = :tipo', { tipo: filter.tipo });
     }
 
     // Convierte solo para TypeORM aquí

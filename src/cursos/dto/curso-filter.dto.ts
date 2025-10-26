@@ -25,9 +25,12 @@ export class CursoFilterDto extends PaginationQueryDto {
     description: 'Filtrar por estado del curso',
   })
   estado?: string;
-  
+
   @ApiPropertyOptional({ type: Number, description: 'Filtrar por instructor' })
   @IsOptional()
   @IsNumber({}, { message: 'El instructorId debe ser un número válido' })
   instructorId?: number;
+
+  @ApiPropertyOptional({ type: String, description: 'Filtrar por tipo (AD, AP, etc.)' })
+  tipo?: string;
 }
