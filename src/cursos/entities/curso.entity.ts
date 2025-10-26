@@ -43,6 +43,13 @@ export class Curso {
   @JoinColumn({ name: 'instructor_id' })
   instructor: User;
 
+  @Column({ name: 'instructor_dos_id', nullable: true })
+  instructorDosId?: number;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'instructor_dos_id' })
+  instructorDos?: User;
+  
   @Column()
   lugar: string;
 

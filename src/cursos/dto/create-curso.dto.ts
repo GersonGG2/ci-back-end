@@ -51,6 +51,15 @@ export class CreateCursoDto {
   instructorId: number;
 
   @ApiProperty({
+    description: 'ID del segundo instructor (opcional)',
+    example: 12,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  instructorDosId?: number;
+
+  @ApiProperty({
     description: 'Lugar donde se impartirá el curso',
     example: 'Instituto Tecnológico de Zacatepec',
   })

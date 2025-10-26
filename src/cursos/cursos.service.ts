@@ -72,7 +72,7 @@ export class CursosService {
 
   async findAll(): Promise<Curso[]> {
     return this.cursosRepository.find({
-      relations: ['periodo', 'academia', 'instructor', 'creador'],
+      relations: ['periodo', 'academia', 'instructor','instructorDos', 'creador'],
     });
   }
 
@@ -240,6 +240,7 @@ export class CursosService {
       .leftJoinAndSelect('curso.periodo', 'periodo')
       .leftJoinAndSelect('curso.academia', 'academia')
       .leftJoinAndSelect('curso.instructor', 'instructor')
+      .leftJoinAndSelect('curso.instructorDos', 'instructorDos')
       .leftJoinAndSelect('curso.creador', 'creador');
 
     if (filter.periodoId) {
