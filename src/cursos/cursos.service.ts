@@ -589,6 +589,10 @@ export class CursosService {
       col.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
     });
 
+    worksheet.eachRow((row, rowNumber) => {
+      row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+    });
+
     // Alineaciones específicas
     worksheet.getColumn('id').alignment = { vertical: 'middle', horizontal: 'center' };
     worksheet.getColumn('horas').alignment = { vertical: 'middle', horizontal: 'center' };
@@ -597,7 +601,7 @@ export class CursosService {
 
     // Encabezado: estilo más bonito y espaciado
     const headerRow = worksheet.getRow(1);
-    headerRow.height = 30;
+    headerRow.height = 60;
     headerRow.font = { bold: true, size: 12, color: { argb: 'FF1F4E78' } };
     headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
     headerRow.eachCell((cell) => {
@@ -648,7 +652,7 @@ export class CursosService {
       });
 
       // Pequeño padding vertical por fila
-      row.height = 20;
+      row.height = 60;
     });
 
     // Añadir un pequeño espacio visual (fila vacía) al final
@@ -1059,7 +1063,7 @@ export class CursosService {
     // --- 4. Definición del Documento PDF ---
     const docDefinition: any = {
       pageOrientation: 'landscape',
-     pageMargins: [10, 120, 10, 20],
+      pageMargins: [10, 120, 10, 20],
       header: function (currentPage, pageCount) {
         return {
           margin: [10, 10, 10, 0],
@@ -1094,9 +1098,9 @@ export class CursosService {
                     { text: 'VERSIÓN:', bold: true },
                     { text: '0', alignment: 'right' }
                   ],
-               /*    [
-                    { text: 'REFERENCIA A LA NORMA ISO 9001:2015', colSpan: 2, alignment: 'left', margin: [0, 5, 0, 0] }, {}
-                  ], */
+                  /*    [
+                       { text: 'REFERENCIA A LA NORMA ISO 9001:2015', colSpan: 2, alignment: 'left', margin: [0, 5, 0, 0] }, {}
+                     ], */
                   [
                     { text: 'PÁGINA:', bold: true, margin: [0, 5, 0, 0] },
                     { text: `${currentPage} de ${pageCount}`, alignment: 'right' }
@@ -1136,8 +1140,8 @@ export class CursosService {
             vLineColor: function (i, node) { return 'gray'; },
             paddingLeft: function (i, node) { return 2; },
             paddingRight: function (i, node) { return 2; },
-            paddingTop: function (i, node) { return 4; },
-            paddingBottom: function (i, node) { return 4; }
+            paddingTop: function (i, node) { return 8; },
+            paddingBottom: function (i, node) { return 8; }
           }
         },
       ],
