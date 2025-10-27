@@ -11,6 +11,9 @@ import {
   Query,
   BadRequestException,
   InternalServerErrorException,
+  Res,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,6 +22,7 @@ import {
   ApiResponse,
   ApiQuery,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { CursosService } from './cursos.service';
 import { CreateCursoDto } from './dto/create-curso.dto';
@@ -29,6 +33,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CursoFilterDto } from './dto/curso-filter.dto';
 import { CambiarEstatusCursosDto } from './dto/cambiar-estatus-curso.dto';
 import { EliminarMultiplesCursosDto } from './dto/EliminarMultiplesCursosDto';
+import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @UseGuards(JwtAuthGuard)
 @ApiTags('cursos')
@@ -208,6 +214,66 @@ export class CursosController {
     );
   }
 
+  @Get('exportar-pdf')
+  @ApiOperation({ summary: 'Exportar cursos filtrados a PDF' })
+  @ApiQuery({ name: 'periodoId', required: false, type: Number })
+  @ApiQuery({ name: 'estado', required: false, type: String })
+  @ApiQuery({ name: 'academiaId', required: false, type: Number })
+  @ApiQuery({ name: 'searchValue', required: false, type: String })
+  async exportarPDF(
+    @Res() res: Response,
+    @Query() query: { periodoId?: number; estado?: string; academiaId?: number; searchValue?: string }
+  ) {
+    const buffer = await this.cursosService.exportarCursosPDF(query);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=cursos.pdf');
+    res.send(buffer);
+  }
+
+  @Get('exportar-excel')
+  @ApiOperation({ summary: 'Exportar cursos filtrados a Excel' })
+  @ApiQuery({ name: 'periodoId', required: false, type: Number })
+  @ApiQuery({ name: 'estado', required: false, type: String })
+  @ApiQuery({ name: 'academiaId', required: false, type: Number })
+  @ApiQuery({ name: 'searchValue', required: false, type: String })
+  async exportarExcel(
+    @Res() res: Response,
+    @Query() query: { periodoId?: number; estado?: string; academiaId?: number; searchValue?: string }
+  ) {
+    const buffer = await this.cursosService.exportarCursosExcel(query);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=cursos.xlsx');
+    res.send(buffer);
+  }
+
+  @Post('importar-excel')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Importar cursos desde un archivo Excel (plantilla)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Archivo Excel (.xlsx)',
+        },
+      },
+    },
+  })
+  async importarExcel(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No se ha enviado archivo válido');
+    }
+    return await this.cursosService.importarCursosExcel(
+      Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer as ArrayBuffer),
+    );
+  }
+
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un curso por ID' })
   @ApiResponse({ status: 200, description: 'Curso obtenido exitosamente' })
@@ -289,4 +355,6 @@ export class CursosController {
   ) {
     return this.cursosService.eliminarMultiplesCursos(body.cursosIds);
   }
+
+
 }

@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PeriodosModule } from '../periodos/periodos.module';
 import { AcademiasModule } from '../academias/academias.module';
 import { CommonModule } from 'src/common/common.module';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { CommonModule } from 'src/common/common.module';
     AuthModule,
     PeriodosModule,
     AcademiasModule,
-    CommonModule
+    CommonModule,
+    UsersModule,
   ],
   controllers: [CursosController],
   providers: [CursosService],
