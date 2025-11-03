@@ -82,6 +82,64 @@ export class CursosService {
     });
   }
 
+  async findCursosByUsuario(
+    userId: number,
+    filter?: CursoFilterDto
+  ): Promise<any> {
+    if (!userId || isNaN(userId) || userId <= 0) {
+      throw new BadRequestException('ID de usuario inválido');
+    }
+
+    const qb = this.cursosRepository
+      .createQueryBuilder('curso')
+      .leftJoinAndSelect('curso.periodo', 'periodo')
+      .leftJoinAndSelect('curso.academia', 'academia')
+      .leftJoinAndSelect('curso.instructor', 'instructor')
+      .leftJoinAndSelect('curso.instructorDos', 'instructorDos')
+      .leftJoinAndSelect('curso.creador', 'creador')
+      // JOIN con inscripciones para filtrar solo cursos inscritos
+      .innerJoin('curso.inscripciones', 'inscripcion')
+      .where('inscripcion.docente_id = :userId', { userId })  // ← CAMBIO AQUÍ
+      // Excluir cursos donde el usuario es instructor
+      .andWhere('curso.instructorId != :userId', { userId })
+      .andWhere('(curso.instructorDosId IS NULL OR curso.instructorDosId != :userId)', { userId });
+
+    // Aplicar filtros adicionales si existen
+    if (filter?.periodoId) {
+      qb.andWhere('curso.periodoId = :periodoId', { periodoId: filter.periodoId });
+    }
+
+    // Filtrar por estado: si no se especifica, mostrar solo aprobado y finalizado
+    if (filter?.estado) {
+      qb.andWhere('curso.estado = :estado', { estado: filter.estado });
+    } else {
+      qb.andWhere('curso.estado IN (:...estados)', { estados: ['aprobado', 'finalizado'] });
+    }
+
+    if (filter?.searchValue) {
+      qb.andWhere('(curso.nombre LIKE :search OR curso.objetivo LIKE :search)', {
+        search: `%${filter.searchValue}%`,
+      });
+    }
+
+    // Aplicar ordenamiento
+    let sortField = filter?.sort || 'curso.id';
+    if (sortField && !sortField.includes('.')) {
+      sortField = `curso.${sortField}`;
+    }
+
+    qb.orderBy(
+      sortField,
+      filter?.order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+    );
+
+    return this.paginationService.paginate<Curso>(
+      qb,
+      { ...filter, sort: sortField },
+      ['curso.nombre', 'curso.objetivo']
+    );
+  }
+
   async findByPeriodo(periodoId: number): Promise<Curso[]> {
     return this.cursosRepository.find({
       where: { periodoId },
@@ -99,7 +157,7 @@ export class CursosService {
   async findOne(id: number): Promise<Curso> {
     const curso = await this.cursosRepository.findOne({
       where: { id },
-      relations: ['periodo', 'academia', 'instructor', 'creador'],
+      relations: ['periodo', 'academia', 'instructor', 'instructorDos', 'creador'],
     });
 
     if (!curso) {
@@ -108,7 +166,62 @@ export class CursosService {
 
     return curso;
   }
+  async findCursosByInstructor(
+    instructorId: number,
+    filter?: CursoFilterDto
+  ): Promise<any> {
+    if (!instructorId || isNaN(instructorId) || instructorId <= 0) {
+      throw new BadRequestException('ID de instructor inválido');
+    }
 
+    const qb = this.cursosRepository
+      .createQueryBuilder('curso')
+      .leftJoinAndSelect('curso.periodo', 'periodo')
+      .leftJoinAndSelect('curso.academia', 'academia')
+      .leftJoinAndSelect('curso.instructor', 'instructor')
+      .leftJoinAndSelect('curso.instructorDos', 'instructorDos')
+      .leftJoinAndSelect('curso.creador', 'creador')
+      .where('(curso.instructorId = :instructorId OR curso.instructorDosId = :instructorId)', { instructorId });
+
+    // Aplicar filtros adicionales si existen
+    if (filter?.periodoId) {
+      qb.andWhere('curso.periodoId = :periodoId', { periodoId: filter.periodoId });
+    }
+
+    if (filter?.academiaId) {
+      qb.andWhere('curso.academiaId = :academiaId', { academiaId: filter.academiaId });
+    }
+
+    // Filtrar por estado: si no se especifica, mostrar solo aprobado y finalizado
+    if (filter?.estado) {
+      qb.andWhere('curso.estado = :estado', { estado: filter.estado });
+    } else {
+      qb.andWhere('curso.estado IN (:...estados)', { estados: ['aprobado', 'finalizado'] });
+    }
+
+    if (filter?.searchValue) {
+      qb.andWhere('(curso.nombre LIKE :search OR curso.objetivo LIKE :search)', {
+        search: `%${filter.searchValue}%`,
+      });
+    }
+
+    // Aplicar ordenamiento
+    let sortField = filter?.sort || 'curso.id';
+    if (sortField && !sortField.includes('.')) {
+      sortField = `curso.${sortField}`;
+    }
+
+    qb.orderBy(
+      sortField,
+      filter?.order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+    );
+
+    return this.paginationService.paginate<Curso>(
+      qb,
+      { ...filter, sort: sortField },
+      ['curso.nombre', 'curso.objetivo']
+    );
+  }
   async update(
     id: number,
     updateCursoDto: UpdateCursoDto,

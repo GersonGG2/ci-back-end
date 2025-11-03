@@ -45,6 +45,32 @@ export class InscripcionesController {
     const userId = req.user.id;
     return this.inscripcionesService.findByDocente(userId);
   }
+  @Get('verificar/:cursoId/:userId')
+  @ApiOperation({ summary: 'Verificar si un usuario está inscrito en un curso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de inscripción verificado',
+    schema: {
+      example: {
+        inscrito: true,
+        inscripcion: {
+          id: 1,
+          cursoId: 20,
+          docenteId: 28,
+          estado: 'inscrito',
+          fechaInscripcion: '2025-09-16T19:50:49.000Z'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Curso no encontrado' })
+  verificarInscripcion(
+    @Param('cursoId') cursoId: string,
+    @Param('userId') userId: string
+  ) {
+    return this.inscripcionesService.verificarInscripcion(+userId, +cursoId);
+  }
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una inscripción por ID' })

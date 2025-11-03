@@ -23,6 +23,7 @@ import {
   ApiQuery,
   ApiBody,
   ApiConsumes,
+  ApiParam,
 } from '@nestjs/swagger';
 import { CursosService } from './cursos.service';
 import { CreateCursoDto } from './dto/create-curso.dto';
@@ -273,6 +274,22 @@ export class CursosController {
     );
   }
 
+  @Get('usuario/:userId')
+  @ApiOperation({ summary: 'Obtener cursos donde participa un usuario' })
+  @ApiParam({ name: 'userId', type: Number, description: 'ID del usuario' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Cantidad de registros por página' })
+  @ApiQuery({ name: 'sort', required: false, type: String, description: 'Campo por el cual ordenar' })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], description: 'Dirección del ordenamiento' })
+  @ApiQuery({ name: 'searchValue', required: false, type: String, description: 'Valor para búsqueda' })
+  @ApiQuery({ name: 'periodoId', required: false, type: Number, description: 'Filtrar por periodo' })
+  @ApiQuery({ name: 'estado', required: false, type: String, description: 'Filtrar por estado' })
+  async getCursosByUsuario(
+    @Param('userId') userId: number,
+    @Query() filter: CursoFilterDto
+  ) {
+    return this.cursosService.findCursosByUsuario(Number(userId), filter);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un curso por ID' })
@@ -280,6 +297,24 @@ export class CursosController {
   @ApiResponse({ status: 404, description: 'Curso no encontrado' })
   findOne(@Param('id') id: string) {
     return this.cursosService.findOne(+id);
+  }
+
+  @Get('instructor/:instructorId')
+  @ApiOperation({ summary: 'Obtener cursos donde participa un instructor' })
+  @ApiParam({ name: 'instructorId', type: Number, description: 'ID del instructor' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Cantidad de registros por página' })
+  @ApiQuery({ name: 'sort', required: false, type: String, description: 'Campo por el cual ordenar' })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], description: 'Dirección del ordenamiento' })
+  @ApiQuery({ name: 'searchValue', required: false, type: String, description: 'Valor para búsqueda' })
+  @ApiQuery({ name: 'periodoId', required: false, type: Number, description: 'Filtrar por periodo' })
+  @ApiQuery({ name: 'academiaId', required: false, type: Number, description: 'Filtrar por academia' })
+  @ApiQuery({ name: 'estado', required: false, type: String, description: 'Filtrar por estado' })
+  async getCursosByInstructor(
+    @Param('instructorId') instructorId: number,
+    @Query() filter: CursoFilterDto
+  ) {
+    return this.cursosService.findCursosByInstructor(Number(instructorId), filter);
   }
 
   @Patch(':id')

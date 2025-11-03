@@ -166,4 +166,38 @@ export class InscripcionesService {
     inscripcion.estado = 'cancelado';
     return this.inscripcionesRepository.save(inscripcion);
   }
+
+  async verificarInscripcion(
+    userId: number,
+    cursoId: number
+  ): Promise<{ inscrito: boolean; inscripcion?: Inscripcion }> {
+    if (!userId || isNaN(userId) || userId <= 0) {
+      throw new BadRequestException('ID de usuario inválido');
+    }
+
+    if (!cursoId || isNaN(cursoId) || cursoId <= 0) {
+      throw new BadRequestException('ID de curso inválido');
+    }
+
+    // Verificar que el curso existe
+    const curso = await this.cursosService.findOne(cursoId);
+    if (!curso) {
+      throw new NotFoundException(`Curso con ID ${cursoId} no encontrado`);
+    }
+
+    // Verificar si el usuario está inscrito
+    const inscripcion = await this.inscripcionesRepository.findOne({
+      where: {
+        cursoId,
+        docenteId: userId,
+      },
+      relations: ['curso', 'docente'],
+    });
+
+    return {
+      inscrito: !!inscripcion,
+      inscripcion: inscripcion || undefined,
+    };
+  }
+
 }
